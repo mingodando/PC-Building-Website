@@ -36,6 +36,8 @@ class Product(models.Model):
     stock = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to='products', null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    description = models.TextField(blank=True)
 
     CONDITION_CHOICES = [
         ('new', 'New'),
