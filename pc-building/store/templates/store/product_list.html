@@ -4,11 +4,11 @@
 <h2 class="product-header2"> Products</h2>
 <div class="product-grid">
     {% for product in products %}
-        <div class="product-card">
-            <h3>{{product.name}}</h3>
-            <p>฿{{product.price}}</p>
-        </div>
+        <a href="{% url 'product_detail' product.slug %}" class="product-card">
+            <h3>{{ product.name }}</h3>
+            <p>฿{{ product.price }}</p>
+        </a>
     {% endfor %}
-
 </div>
+
 {% endblock %}
