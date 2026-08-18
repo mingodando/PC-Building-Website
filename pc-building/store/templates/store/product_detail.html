@@ -1,10 +1,40 @@
-{%extends 'store/base.html'%}
+{% extends 'store/base.html' %}
 
 {% block content %}
-    <div>
-        <h1> {{ product.name }}</h1>
-        <p> {{product.category}} </p>
-        <p> {{product.description}} </p>
-        <p> ฿{{product.price}} </p>
+<div class="product-detail">
+    <div class="product-header-row">
+        <div>
+            <h1>{{ product.name }}</h1>
+            <p class="product-price">฿{{ product.price }}</p>
+        </div>
+        <div class="product-image-placeholder"></div>
     </div>
+
+    <div class="spec-table">
+        <div class="spec-row">
+            <span class="spec-label">Category</span>
+            <span class="spec-value">{{ product.category }}</span>
+        </div>
+        <div class="spec-row">
+            <span class="spec-label">Condition</span>
+            <span class="spec-value">{{ product.get_condition_display }}</span>
+        </div>
+        <div class="spec-row">
+            <span class="spec-label">Availability</span>
+            <span class="spec-value">{{ product.stock }} in stock</span>
+        </div>
+        {% for spec in product.specs.all %}
+        <div class="spec-row">
+            <span class="spec-label">{{ spec.key }}</span>
+            <span class="spec-value">{{ spec.value }}</span>
+        </div>
+        <div class="spec-row">
+            <span class="spec-label">Specifications</span>
+        </div>
+
+        {% endfor %}
+    </div>
+
+    <button class="add-to-cart-btn">Add to Cart</button>
+</div>
 {% endblock %}

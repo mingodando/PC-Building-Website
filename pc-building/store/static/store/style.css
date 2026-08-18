@@ -38,3 +38,60 @@ nav a {
 .product-header2 {
     padding: 8px;
 }
+
+.product-detail {
+    padding: 1rem;
+    max-width: 400px;
+}
+
+.product-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+}
+
+.product-image-placeholder {
+    width: 150px;
+    height: 150px;
+    background: #eee;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.product-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #222;
+}
+
+.spec-table {
+    margin-top: 1.5rem;
+    max-width: 500px;
+}
+
+.spec-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.spec-label {
+    color: #666;
+}
+
+.spec-value {
+    font-weight: 500;
+}
+
+.add-to-cart-btn {
+    margin-top: 1.5rem;
+    padding: 0.75rem 2rem;
+    background: #3f6fa8;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+}
