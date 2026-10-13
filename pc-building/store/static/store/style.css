@@ -97,7 +97,12 @@
         radial-gradient(70vw 60vh at 50% 105%, rgb(46 230 245 / .12), transparent 70%);
 }
 :root[data-theme="dark"] .site-header { background: color-mix(in srgb, var(--surface) 78%, transparent); }
-:root[data-theme="dark"] .site-footer { background: color-mix(in srgb, var(--surface) 70%, transparent); }
+:root[data-theme="dark"] .site-footer {
+    background:
+        radial-gradient(60% 120% at 0% 0%, rgb(93 141 255 / .14), transparent 70%),
+        radial-gradient(50% 120% at 100% 100%, rgb(188 157 255 / .12), transparent 70%),
+        color-mix(in srgb, var(--surface) 70%, transparent);
+}
 
 :root[data-theme="dark"] .btn-primary {
     background: linear-gradient(135deg, #5d8dff, #7c6bff);
@@ -113,7 +118,8 @@
 :root[data-theme="dark"] .spec-table,
 :root[data-theme="dark"] .cart-list,
 :root[data-theme="dark"] .order-row,
-:root[data-theme="dark"] .auth-card {
+:root[data-theme="dark"] .auth-card,
+:root[data-theme="dark"] .footer-perk {
     background: linear-gradient(180deg, #1f2a50, #1a2444);
 }
 :root[data-theme="dark"] .product-card:hover,
@@ -1037,13 +1043,120 @@ p { margin: 0; }
 
 /* ---------- Footer ---------- */
 
-.site-footer { border-top: 1px solid var(--border); background: var(--surface); padding: 36px 0 20px; }
-.footer-inner { display: grid; grid-template-columns: 1fr 2fr; gap: 32px; }
-.logo-footer { margin-bottom: 8px; }
-.footer-points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; font-size: .88rem; }
-.footer-points div { display: flex; flex-direction: column; gap: 2px; }
-.footer-bottom { margin-top: 28px; font-size: .82rem; }
-.footer-bottom::before { content: ''; display: block; height: 1px; margin-bottom: 16px; background: var(--border); }
+.site-footer {
+    position: relative;
+    margin-top: 24px;
+    padding: 0 0 22px;
+    background:
+        radial-gradient(60% 120% at 0% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+        radial-gradient(50% 120% at 100% 100%, color-mix(in srgb, var(--violet) 9%, transparent), transparent 70%),
+        var(--surface);
+}
+/* Glowing accent line across the top edge. */
+.site-footer::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent) 20%, var(--violet) 50%, #22d3ee 80%, transparent);
+    opacity: .85;
+}
+
+/* Perk cards sit half over the top edge of the footer. */
+.footer-perks {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    transform: translateY(-50%);
+    margin-bottom: -16px;
+}
+.footer-perk {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.footer-perk:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--perk); }
+.footer-perk div { display: flex; flex-direction: column; gap: 2px; font-size: .88rem; min-width: 0; }
+.footer-perk span:not(.perk-icon) { color: var(--text-3); }
+.perk-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: var(--perk);
+    background: var(--perk-soft);
+}
+.perk-green  { --perk: var(--green);  --perk-soft: var(--green-soft); }
+.perk-blue   { --perk: var(--accent); --perk-soft: var(--accent-soft); }
+.perk-violet { --perk: var(--violet); --perk-soft: var(--violet-soft); }
+
+.footer-main {
+    display: grid;
+    grid-template-columns: 1.6fr repeat(3, 1fr);
+    gap: 32px;
+    padding: 8px 0 32px;
+}
+.footer-brand .logo { margin-bottom: 12px; }
+.footer-brand p { max-width: 320px; margin: 0 0 16px; line-height: 1.6; }
+.pay-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pay-chips span {
+    padding: 4px 10px;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--text-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+}
+
+.footer-col { display: flex; flex-direction: column; gap: 10px; font-size: .9rem; }
+.footer-col h3 {
+    margin: 0 0 4px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+.footer-col a {
+    width: fit-content;
+    color: var(--text-3);
+    text-decoration: none;
+    transition: color .15s ease, transform .15s ease;
+}
+.footer-col a:hover { color: var(--accent); transform: translateX(3px); }
+
+.footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    font-size: .82rem;
+    color: var(--text-3);
+}
+.back-to-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    color: var(--text-2);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    transition: color .15s ease, border-color .15s ease;
+}
+.back-to-top:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ---------- Responsive ---------- */
 
@@ -1054,7 +1167,8 @@ p { margin: 0; }
     .product-gallery { position: static; max-height: 420px; aspect-ratio: 4 / 3; }
     .two-col { grid-template-columns: 1fr; }
     .summary-card { position: static; }
-    .footer-inner { grid-template-columns: 1fr; }
+    .footer-main { grid-template-columns: repeat(3, 1fr); }
+    .footer-brand { grid-column: 1 / -1; }
     .pay-panel { grid-template-columns: 1fr 1fr; }
     .pay-instructions { grid-column: span 2; }
 }
@@ -1076,7 +1190,8 @@ p { margin: 0; }
     .order-row { grid-template-columns: 1fr auto; }
     .order-row > div:nth-child(2), .order-row > div:nth-child(3) { display: none; }
     .order-row-total { grid-column: 2; }
-    .footer-points { grid-template-columns: 1fr; }
+    .footer-perks { grid-template-columns: 1fr; gap: 10px; transform: none; margin-bottom: 0; padding-top: 28px; }
+    .footer-main { grid-template-columns: 1fr 1fr; gap: 24px; padding-top: 24px; }
     .spec-row { grid-template-columns: 1fr 1.4fr; }
     .pay-panel { grid-template-columns: 1fr; }
     .pay-instructions { grid-column: auto; }
