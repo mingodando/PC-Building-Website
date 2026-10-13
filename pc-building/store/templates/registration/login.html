@@ -2,7 +2,11 @@
 
 {% block title %}Log in · {{ store_name }}{% endblock %}
 {% block heading %}Welcome back{% endblock %}
-{% block intro %}<p class="muted">Log in to see your cart and orders.</p>{% endblock %}
+{% block intro %}
+    <p class="muted">Log in to see your cart and orders.</p>
+    {% include 'store/partials/google_button.html' with label="Log in with Google" %}
+    <div class="auth-divider"><span>or use your password</span></div>
+{% endblock %}
 {% block submit %}Log in{% endblock %}
 {% block footer %}
     <a href="{% url 'password_reset' %}" class="link">Forgot your password?</a>

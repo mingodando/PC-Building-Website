@@ -2,7 +2,6 @@ import logging
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.core.mail import send_mail
@@ -14,7 +13,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_POST
 
-from .forms import CheckoutForm, SignUpForm
+from .forms import CheckoutForm
 from .models import Cart, CartItem, Category, Order, OrderItem, Product
 
 logger = logging.getLogger(__name__)
@@ -356,18 +355,10 @@ def order_cancel(request, order_id):
 # ---------- Accounts ----------
 
 def signup(request):
+    """Sign-up happens through Google (django-allauth); this page just offers the button."""
     if request.user.is_authenticated:
         return redirect('product_list')
-    next_url = request.POST.get('next') or request.GET.get('next') or ''
-    if request.method == 'POST':
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, f"Welcome to {settings.STORE_NAME}, {user.username}!")
-            if url_has_allowed_host_and_scheme(next_url, {request.get_host()}, request.is_secure()):
-                return redirect(next_url)
-            return redirect('product_list')
-    else:
-        form = SignUpForm()
-    return render(request, 'registration/signup.html', {'form': form, 'next': next_url})
+    next_url = request.GET.get('next', '')
+    if not url_has_allowed_host_and_scheme(next_url, {request.get_host()}, request.is_secure()):
+        next_url = ''
+    return render(request, 'registration/signup.html', {'next': next_url})

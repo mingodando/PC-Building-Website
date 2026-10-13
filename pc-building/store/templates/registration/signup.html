@@ -3,7 +3,10 @@
 {% block title %}Create an account · {{ store_name }}{% endblock %}
 {% block heading %}Create your account{% endblock %}
 {% block intro %}<p class="muted">Save your cart, check out faster and track your orders.</p>{% endblock %}
-{% block submit %}Create account{% endblock %}
+{% block form %}
+    {% include 'store/partials/google_button.html' with label="Sign up with Google" %}
+    <p class="muted auth-note">We'll use your Google name and email. No password needed.</p>
+{% endblock %}
 {% block footer %}
     <span>Already have an account? <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}" class="link">Log in</a></span>
 {% endblock %}
