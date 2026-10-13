@@ -10,7 +10,9 @@
 <form method="post" class="two-col" novalidate>
     {% csrf_token %}
     <div class="stack">
-        {% if form.non_field_errors %}<div class="toast toast-error">{{ form.non_field_errors }}</div>{% endif %}
+        {% if form.errors %}
+            <div class="toast toast-error" role="alert">Please fix the highlighted fields below.{% for error in form.non_field_errors %} {{ error }}{% endfor %}</div>
+        {% endif %}
 
         <section class="panel">
             <h2 class="panel-title"><span class="step-num">1</span> Delivery address</h2>

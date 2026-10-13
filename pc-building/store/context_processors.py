@@ -15,4 +15,5 @@ def store(request):
         'nav_categories': Category.objects.all(),
         'cart_count': cart_count,
         'google_enabled': bool(settings.GOOGLE_CLIENT_ID),
+        'debug': settings.DEBUG,
     }

@@ -13,5 +13,9 @@
         </button>
     </form>
 {% else %}
-    <div class="toast toast-error">Google sign-in isn't set up yet. Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to enable it.</div>
+    {% if debug %}
+        <div class="toast toast-error">Google sign-in isn't set up yet. Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to enable it.</div>
+    {% else %}
+        <div class="toast toast-error">Google sign-in is unavailable right now. Please try again later.</div>
+    {% endif %}
 {% endif %}

@@ -1,0 +1,21 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Something went wrong · CleanByte</title>
+    <link rel="stylesheet" href="{% static 'store/style.css' %}">
+    <link rel="icon" href="{% static 'store/favicon.svg' %}" type="image/svg+xml">
+</head>
+<body>
+    {# Rendered without the usual context (no user, no categories), so it stands alone. #}
+    <main class="container main">
+        <div class="empty-state">
+            <div class="big-code mono">500</div>
+            <h3>Something went wrong on our side</h3>
+            <p class="muted">Please try again in a moment. Your cart and orders are safe.</p>
+            <a href="/" class="btn btn-primary">Back to the store</a>
+        </div>
+    </main>
+</body>
+</html>

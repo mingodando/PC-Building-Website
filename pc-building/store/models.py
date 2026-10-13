@@ -2,6 +2,7 @@ import uuid
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
@@ -44,9 +45,9 @@ class Category(models.Model):
 class Product(models.Model):
     name = models.CharField(max_length=100)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
     compare_price = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True,
+        max_digits=10, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)],
         help_text="Original price. If higher than price, the product shows as on sale.",
     )
     stock = models.PositiveIntegerField(default=0)
@@ -250,6 +251,14 @@ class Order(models.Model):
     @property
     def awaiting_payment(self):
         return self.status == 'pending' and self.payment_method != 'cod'
+
+    def cancel(self):
+        """Mark the order cancelled and put its items back in stock. Call inside a transaction."""
+        for item in self.items.all():
+            if item.product_id:
+                Product.objects.filter(pk=item.product_id).update(stock=models.F('stock') + item.quantity)
+        self.status = 'cancelled'
+        self.save(update_fields=['status'])
 
     @property
     def progress_step(self):

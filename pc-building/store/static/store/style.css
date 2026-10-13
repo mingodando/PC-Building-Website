@@ -1022,6 +1022,44 @@ p { margin: 0; }
 .btn-google:hover { background: var(--surface-2); }
 .google-logo { flex-shrink: 0; }
 
+/* django-allauth pages (Google sign-in steps) render plain elements, so style them here. */
+.allauth-page h1 { font-size: 1.6rem; font-weight: 800; margin: 0; }
+.allauth-page h2 { font-size: 1.15rem; margin: 0; }
+.allauth-page p { margin: 0; color: var(--text-2); }
+.allauth-page form { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+.allauth-page form p { display: flex; flex-direction: column; gap: 6px; }
+.allauth-page label { font-weight: 600; font-size: .9rem; color: var(--text); }
+.allauth-page input:not([type=checkbox]):not([type=radio]) {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+.allauth-page input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.allauth-page form button,
+.allauth-page form a[href] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 13px 24px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+:root[data-theme="dark"] .allauth-page form button { background: linear-gradient(135deg, #5d8dff, #7c6bff); }
+.allauth-page .errorlist { margin: 0; padding: 0; list-style: none; color: var(--red); font-size: .85rem; }
+.allauth-page a:not([class]) { color: var(--accent); }
+.allauth-page ul:not(.errorlist) { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
 /* ---------- Empty states & misc ---------- */
 
 .empty-state {
@@ -1126,13 +1164,17 @@ p { margin: 0; }
     text-transform: uppercase;
     color: var(--text);
 }
-.footer-col a {
+.footer-col a,
+.footer-link-button {
     width: fit-content;
     color: var(--text-3);
     text-decoration: none;
     transition: color .15s ease, transform .15s ease;
 }
-.footer-col a:hover { color: var(--accent); transform: translateX(3px); }
+.footer-col a:hover,
+.footer-link-button:hover { color: var(--accent); transform: translateX(3px); }
+.footer-col form { margin: 0; }
+.footer-link-button { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
 
 .footer-bottom {
     display: flex;
@@ -1178,6 +1220,8 @@ p { margin: 0; }
     .header-inner { flex-wrap: wrap; height: auto; padding-top: 10px; padding-bottom: 10px; gap: 10px; }
     .header-search { order: 3; max-width: none; flex-basis: 100%; }
     .hide-sm { display: none; }
+    .logo { font-size: 1.05rem; }
+    .nav-link { padding: 8px 10px; }
     .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .product-card-body { padding: 12px; }
     .product-card-footer { flex-direction: column; align-items: flex-start; }

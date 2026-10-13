@@ -1,4 +1,5 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.db import transaction
 from django.utils.html import format_html
 
 from .models import Category, Product, SpecDetails, Cart, CartItem, Order, OrderItem
@@ -65,6 +66,9 @@ class OrderItemInline(admin.TabularInline):
     readonly_fields = ('product', 'product_name', 'quantity', 'price')
     can_delete = False
 
+    def has_add_permission(self, request, obj=None):
+        return False
+
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -81,14 +85,40 @@ class OrderAdmin(admin.ModelAdmin):
         ('Delivery', {'fields': ('delivery_method', 'full_name', 'email', 'phone', 'address', 'city', 'postal_code', 'notes')}),
     )
 
+    def has_add_permission(self, request):
+        # Orders come from checkout, which works out totals and takes the stock.
+        return False
+
+    def save_model(self, request, obj, form, change):
+        old_status = Order.objects.filter(pk=obj.pk).values_list('status', flat=True).first()
+        if old_status == 'cancelled' and obj.status != 'cancelled':
+            obj.status = 'cancelled'
+            self.message_user(
+                request, f"Order #{obj.pk} was cancelled and its stock returned, so it can't be reopened.",
+                messages.WARNING,
+            )
+        if obj.status == 'cancelled' and old_status not in (None, 'cancelled'):
+            with transaction.atomic():
+                super().save_model(request, obj, form, change)
+                obj.cancel()
+            return
+        super().save_model(request, obj, form, change)
+
+    def _set_status(self, request, queryset, status):
+        updated = queryset.exclude(status='cancelled').update(status=status)
+        skipped = queryset.count() - updated
+        self.message_user(request, f"Marked {updated} order{'s' if updated != 1 else ''} as {status}.")
+        if skipped:
+            self.message_user(request, f"Skipped {skipped} cancelled order{'s' if skipped != 1 else ''}.", messages.WARNING)
+
     @admin.action(description='Mark selected orders as paid')
     def mark_paid(self, request, queryset):
-        queryset.update(status='paid')
+        self._set_status(request, queryset, 'paid')
 
     @admin.action(description='Mark selected orders as shipped')
     def mark_shipped(self, request, queryset):
-        queryset.update(status='shipped')
+        self._set_status(request, queryset, 'shipped')
 
     @admin.action(description='Mark selected orders as delivered')
     def mark_delivered(self, request, queryset):
-        queryset.update(status='delivered')
+        self._set_status(request, queryset, 'delivered')

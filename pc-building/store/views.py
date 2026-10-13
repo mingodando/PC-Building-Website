@@ -122,10 +122,12 @@ def get_cart(user):
 
 
 def parse_quantity(value, default=1):
+    """A whole number of at least 0 from a form value; anything else (blank, negative, 1.5) gives `default`."""
     try:
-        return max(int(value), 0)
+        quantity = int(value)
     except (TypeError, ValueError):
         return default
+    return quantity if quantity >= 0 else default
 
 
 @login_required
@@ -182,7 +184,7 @@ def cart_add(request, product_id):
 def cart_update(request, item_id):
     item = get_object_or_404(CartItem, pk=item_id, cart__user=request.user)
     quantity = parse_quantity(request.POST.get('quantity'), item.quantity)
-    if quantity == 0:
+    if quantity == 0 or item.product.stock == 0 or not item.product.is_active:
         name = item.product.name
         item.delete()
         messages.success(request, f"Removed {name} from your cart.")
@@ -190,7 +192,7 @@ def cart_update(request, item_id):
         if quantity > item.product.stock:
             quantity = item.product.stock
             messages.warning(request, f"Only {item.product.stock} of {item.product.name} available.")
-        item.quantity = max(quantity, 1)
+        item.quantity = quantity
         item.save()
     return redirect('cart_detail')
 
@@ -241,7 +243,12 @@ def place_order(user, cart, form):
             for i in items
         ])
         for item in items:
-            Product.objects.filter(pk=item.product_id).update(stock=F('stock') - item.quantity)
+            # Only take stock that is still there, in case another order got in first (SQLite has no row locks).
+            taken = Product.objects.filter(pk=item.product_id, stock__gte=item.quantity).update(
+                stock=F('stock') - item.quantity
+            )
+            if not taken:
+                raise StockError(Product.objects.get(pk=item.product_id))
         cart.items.all().delete()
     return order
 
@@ -276,11 +283,11 @@ def checkout(request):
                 order = place_order(request.user, cart, form)
             except StockError as exc:
                 product = exc.args[0]
-                messages.error(
-                    request,
-                    f"{product.name} no longer has enough stock (only {product.stock} left). "
-                    "Please update your cart.",
-                )
+                if product.is_active and product.stock:
+                    problem = f"only has {product.stock} left"
+                else:
+                    problem = "is no longer available"
+                messages.error(request, f"Sorry, {product.name} {problem}. Please update your cart.")
                 return redirect('cart_detail')
             send_order_email(order)
             return redirect(f"{order.get_absolute_url()}?placed=1")
@@ -304,7 +311,9 @@ def checkout(request):
         }
         for value, label in Order.DELIVERY_CHOICES
     ]
-    selected_delivery = form['delivery_method'].value() or 'standard'
+    selected_delivery = form['delivery_method'].value()
+    if selected_delivery not in Order.DELIVERY_FEES:
+        selected_delivery = 'standard'
     shipping_fee = Order.delivery_fee_for(selected_delivery, subtotal)
     return render(request, 'store/checkout.html', {
         'form': form,
@@ -343,11 +352,7 @@ def order_cancel(request, order_id):
         if not order.can_cancel:
             messages.error(request, "This order can no longer be cancelled. Contact us if you need help.")
             return redirect(order)
-        for item in order.items.all():
-            if item.product_id:
-                Product.objects.filter(pk=item.product_id).update(stock=F('stock') + item.quantity)
-        order.status = 'cancelled'
-        order.save(update_fields=['status'])
+        order.cancel()
     messages.success(request, f"Order #{order.pk} has been cancelled.")
     return redirect(order)
 

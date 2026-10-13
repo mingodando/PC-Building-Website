@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.template.loader import render_to_string
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -100,6 +101,25 @@ class CartTests(StoreTestCase):
         self.client.post(reverse('cart_add', args=[self.gpu.pk]), {'quantity': 10})
         self.assertEqual(CartItem.objects.get().quantity, 3)
 
+    def test_junk_quantities_are_ignored(self):
+        self.login()
+        self.client.post(reverse('cart_add', args=[self.gpu.pk]), {'quantity': 2})
+        item = CartItem.objects.get()
+        for junk in ('-5', 'abc', '1.5', ''):
+            self.client.post(reverse('cart_update', args=[item.pk]), {'quantity': junk})
+            item.refresh_from_db()
+            self.assertEqual(item.quantity, 2)
+        self.client.post(reverse('cart_update', args=[item.pk]), {'quantity': '0'})
+        self.assertFalse(CartItem.objects.exists())
+
+    def test_updating_sold_out_item_removes_it(self):
+        self.login()
+        self.client.post(reverse('cart_add', args=[self.gpu.pk]), {'quantity': 2})
+        Product.objects.filter(pk=self.gpu.pk).update(stock=0)
+        item = CartItem.objects.get()
+        self.client.post(reverse('cart_update', args=[item.pk]), {'quantity': 1})
+        self.assertFalse(CartItem.objects.exists())
+
     def test_cannot_touch_someone_elses_cart(self):
         other = User.objects.create_user('other', password='pass12345!')
         item = CartItem.objects.create(cart=Cart.objects.create(user=other), product=self.gpu, quantity=1)
@@ -139,10 +159,22 @@ class CheckoutTests(StoreTestCase):
         self.assertFalse(Order.objects.exists())
         self.assertTrue(CartItem.objects.exists())
 
+    def test_product_removed_before_checkout(self):
+        Product.objects.filter(pk=self.gpu.pk).update(is_active=False)
+        response = self.client.post(reverse('checkout'), self.checkout_data(), follow=True)
+        self.assertContains(response, 'RTX 4060 is no longer available')
+        self.assertFalse(Order.objects.exists())
+
     def test_invalid_form_shows_errors(self):
         response = self.client.post(reverse('checkout'), self.checkout_data(postal_code='abc'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Postal codes are 5 digits.')
+        self.assertContains(response, 'Please fix the highlighted fields')
+        self.assertFalse(Order.objects.exists())
+
+    def test_tampered_choices_are_rejected(self):
+        response = self.client.post(reverse('checkout'), self.checkout_data(delivery_method='teleport', payment_method='crypto'))
+        self.assertEqual(response.status_code, 200)
         self.assertFalse(Order.objects.exists())
 
     def test_cancel_restores_stock(self):
@@ -162,6 +194,55 @@ class CheckoutTests(StoreTestCase):
         self.assertEqual(self.client.get(order.get_absolute_url()).status_code, 404)
 
 
+class AdminTests(StoreTestCase):
+    def setUp(self):
+        super().setUp()
+        self.client.login(username='buyer', password='pass12345!')
+        self.client.post(reverse('cart_add', args=[self.gpu.pk]), {'quantity': 2})
+        self.client.post(reverse('checkout'), self.checkout_data())
+        self.order = Order.objects.get()
+        User.objects.create_superuser('boss', 'boss@example.com', 'pass12345!')
+        self.client.login(username='boss', password='pass12345!')
+
+    def change_status(self, status):
+        url = reverse('admin:store_order_change', args=[self.order.pk])
+        data = {
+            'user': self.user.pk, 'status': status, 'payment_method': 'promptpay', 'delivery_method': 'standard',
+            'full_name': 'Test Buyer', 'email': 'buyer@example.com', 'phone': '0812345678',
+            'address': '1 Sukhumvit Rd', 'city': 'Bangkok', 'postal_code': '10110', 'notes': '',
+            'items-TOTAL_FORMS': 1, 'items-INITIAL_FORMS': 1,
+            'items-0-id': self.order.items.get().pk, 'items-0-order': self.order.pk,
+        }
+        return self.client.post(url, data)
+
+    def test_orders_cannot_be_added_by_hand(self):
+        self.assertEqual(self.client.get(reverse('admin:store_order_add')).status_code, 403)
+
+    def test_admin_pages_load(self):
+        for name in ('admin:store_order_changelist', 'admin:store_product_changelist', 'admin:store_product_add'):
+            self.assertEqual(self.client.get(reverse(name)).status_code, 200)
+        self.assertEqual(self.client.get(reverse('admin:store_order_change', args=[self.order.pk])).status_code, 200)
+
+    def test_cancelling_in_admin_restocks_and_cannot_reopen(self):
+        self.assertEqual(self.change_status('cancelled').status_code, 302)
+        self.gpu.refresh_from_db()
+        self.assertEqual(self.gpu.stock, 3)
+
+        self.change_status('paid')
+        self.order.refresh_from_db()
+        self.gpu.refresh_from_db()
+        self.assertEqual(self.order.status, 'cancelled')
+        self.assertEqual(self.gpu.stock, 3)
+
+    def test_bulk_actions_skip_cancelled_orders(self):
+        Order.objects.filter(pk=self.order.pk).update(status='cancelled')
+        self.client.post(reverse('admin:store_order_changelist'), {
+            'action': 'mark_paid', '_selected_action': [self.order.pk],
+        })
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'cancelled')
+
+
 class AccountTests(TestCase):
     @override_settings(
         GOOGLE_CLIENT_ID='test-id',
@@ -173,8 +254,46 @@ class AccountTests(TestCase):
         self.assertContains(response, 'action="/auth/google/login/?process=login"')
         self.assertNotContains(response, 'name="password1"')
 
+    @override_settings(DEBUG=True)
     def test_signup_without_google_keys_explains_setup(self):
         self.assertContains(self.client.get(reverse('signup')), 'GOOGLE_CLIENT_ID')
+
+    def test_setup_hint_is_hidden_from_customers(self):
+        response = self.client.get(reverse('signup'))
+        self.assertNotContains(response, 'GOOGLE_CLIENT_ID')
+        self.assertContains(response, 'Google sign-in is unavailable')
+
+    def test_allauth_password_pages_redirect_to_store_pages(self):
+        self.assertRedirects(self.client.get('/auth/signup/'), reverse('signup'))
+        self.assertRedirects(self.client.get('/auth/login/?next=/cart/'), reverse('login') + '?next=/cart/',
+                             fetch_redirect_response=False)
+        self.assertRedirects(self.client.get('/auth/password/reset/'), reverse('password_reset'))
+
+    @override_settings(
+        GOOGLE_CLIENT_ID='test-id',
+        SOCIALACCOUNT_PROVIDERS={'google': {'APPS': [{'client_id': 'test-id', 'secret': 'test-secret'}]}},
+    )
+    def test_allauth_pages_use_store_layout(self):
+        response = self.client.get('/auth/google/login/')
+        self.assertContains(response, 'auth-card allauth-page')
+        self.assertContains(response, 'site-header')
+
+    def test_logged_in_user_skips_login_page(self):
+        User.objects.create_user('buyer', password='pass12345!')
+        self.client.login(username='buyer', password='pass12345!')
+        self.assertRedirects(self.client.get(reverse('login')), reverse('product_list'))
+
+    def test_google_only_user_has_no_change_password_link(self):
+        user = User.objects.create_user('googler')
+        user.set_unusable_password()
+        user.save()
+        self.client.force_login(user)
+        response = self.client.get(reverse('product_list'))
+        self.assertNotContains(response, reverse('password_change'))
+        self.assertContains(response, 'Log out')
+
+    def test_error_page_renders_standalone(self):
+        self.assertIn('Something went wrong', render_to_string('500.html'))
 
     def test_auth_pages_render(self):
         for name in ('login', 'signup', 'password_reset'):

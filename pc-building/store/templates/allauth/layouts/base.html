@@ -1,0 +1,25 @@
+{% extends 'store/base.html' %}
+{% comment %}
+    django-allauth's own pages (Google sign-in confirmation, cancelled or failed sign-ins, the
+    "pick a username" step) use this layout, so they match the rest of the store.
+{% endcomment %}
+
+{% block title %}{% block head_title %}{% endblock %} · {{ store_name }}{% endblock %}
+
+{% block main %}
+<div class="auth-wrap">
+    <div class="auth-card allauth-page">
+        {% block body %}
+            {% block content %}{% endblock %}
+        {% endblock %}
+        <div class="auth-footer">
+            {% if user.is_authenticated %}
+                <a href="{% url 'product_list' %}" class="link">← Back to the store</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="link">← Back to log in</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% block extra_body %}{% endblock %}
+{% endblock %}
