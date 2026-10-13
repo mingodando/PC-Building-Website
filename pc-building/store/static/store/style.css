@@ -1009,6 +1009,12 @@ p { margin: 0; }
 .auth-card form { margin: 0; }
 .auth-footer { display: flex; flex-direction: column; gap: 6px; align-items: center; font-size: .9rem; color: var(--text-3); }
 .auth-footer:empty { display: none; }
+.auth-note { font-size: .85rem; text-align: center; }
+.auth-divider { display: flex; align-items: center; gap: 12px; font-size: .85rem; color: var(--text-3); }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.btn-google { gap: 10px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
+.btn-google:hover { background: var(--surface-2); }
+.google-logo { flex-shrink: 0; }
 
 /* ---------- Empty states & misc ---------- */
 

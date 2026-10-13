@@ -10,6 +10,7 @@ admin.site.index_title = 'Store management'
 urlpatterns = [
     path('', include('store.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('auth/', include('allauth.urls')),
     path('admin/', admin.site.urls),
 ]
 

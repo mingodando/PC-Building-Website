@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.core import mail
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import Cart, CartItem, Category, Order, Product
@@ -163,13 +163,18 @@ class CheckoutTests(StoreTestCase):
 
 
 class AccountTests(TestCase):
-    def test_signup_logs_in(self):
-        response = self.client.post(reverse('signup'), {
-            'username': 'newbie', 'email': 'new@example.com',
-            'password1': 'Sup3r-secret-pw', 'password2': 'Sup3r-secret-pw',
-        })
-        self.assertRedirects(response, reverse('product_list'))
-        self.assertEqual(int(self.client.session['_auth_user_id']), User.objects.get(username='newbie').pk)
+    @override_settings(
+        GOOGLE_CLIENT_ID='test-id',
+        SOCIALACCOUNT_PROVIDERS={'google': {'APPS': [{'client_id': 'test-id', 'secret': 'test-secret'}]}},
+    )
+    def test_signup_is_google_only(self):
+        response = self.client.get(reverse('signup'))
+        self.assertContains(response, 'Sign up with Google')
+        self.assertContains(response, 'action="/auth/google/login/?process=login"')
+        self.assertNotContains(response, 'name="password1"')
+
+    def test_signup_without_google_keys_explains_setup(self):
+        self.assertContains(self.client.get(reverse('signup')), 'GOOGLE_CLIENT_ID')
 
     def test_auth_pages_render(self):
         for name in ('login', 'signup', 'password_reset'):
