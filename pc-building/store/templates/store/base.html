@@ -1,24 +1,119 @@
 <!DOCTYPE html>
 {% load static %}
-<html>
+<html lang="en" data-theme="dark">
 <head>
-    <title>{% block title %}PC Building Store{% endblock %}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ store_name }} · PCs & Components{% endblock %}</title>
+    <meta name="description" content="{{ store_name }} sells new and tested refurbished PCs and PC components.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'store/style.css' %}">
+    <link rel="icon" href="{% static 'store/favicon.svg' %}" type="image/svg+xml">
+    <script>
+        // Dark is the default. Switch to light before the page paints if the visitor picked it last time.
+        try {
+            if (localStorage.getItem('theme') === 'light') delete document.documentElement.dataset.theme;
+        } catch (e) {}
+    </script>
 </head>
 <body>
-    <header>
-        <div class="logo">
-            <a href="{% url 'product_list' %}" class="logo">CleanByte</a>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="{% url 'product_list' %}" class="logo">
+                <span class="logo-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18"><rect x="6" y="6" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </span>
+                {{ store_name }}
+            </a>
+
+            <form class="header-search" action="{% url 'product_list' %}" method="get" role="search">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <input type="search" name="q" value="{{ query|default:'' }}" placeholder="Search GPUs, CPUs, AM4, DDR5…" aria-label="Search products">
+            </form>
+
+            <nav class="header-nav">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'order_list' %}" class="nav-link">Orders</a>
+                    {% if user.is_staff %}<a href="{% url 'admin:index' %}" class="nav-link hide-sm">Admin</a>{% endif %}
+                    <form action="{% url 'logout' %}" method="post" class="inline-form">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link nav-button">Log out</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="nav-link">Log in</a>
+                    <a href="{% url 'signup' %}" class="nav-link nav-link-strong hide-sm">Sign up</a>
+                {% endif %}
+                <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch light or dark mode" title="Switch light or dark mode">
+                    <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+                    <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
+                <a href="{% url 'cart_detail' %}" class="cart-link" aria-label="Cart, {{ cart_count }} item{{ cart_count|pluralize }}">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20.5" r="1.3" fill="currentColor"/><circle cx="17" cy="20.5" r="1.3" fill="currentColor"/></svg>
+                    {% if cart_count %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+                </a>
+            </nav>
         </div>
-            <nav>
-                <a href="/">Home</a>
-                <a href="#">Cart</a>
-        </nav>
+        <div class="category-bar">
+            <div class="container category-bar-inner">
+                <a href="{% url 'product_list' %}" class="{% if request.resolver_match.url_name == 'product_list' and not request.GET.category %}active{% endif %}">All</a>
+                {% for category in nav_categories %}
+                    <a href="{{ category.get_absolute_url }}" class="{% if request.GET.category == category.slug %}active{% endif %}">{{ category.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
     </header>
 
-    <main>
+    {% if messages %}
+        <div class="container toasts" role="status">
+            {% for message in messages %}
+                <div class="toast toast-{{ message.tags }}">
+                    <span>{{ message }}</span>
+                    <button type="button" class="toast-close" aria-label="Dismiss">×</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <main class="container main">
         {% block content %}
         {% endblock %}
     </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div>
+                <div class="logo logo-footer">{{ store_name }}</div>
+                <p class="muted">New and tested refurbished PC parts, shipped across Thailand.</p>
+            </div>
+            <div class="footer-points">
+                <div><strong>Every part tested</strong><span class="muted">Refurbished parts are graded A–C</span></div>
+                <div><strong>Free standard delivery</strong><span class="muted">On orders over ฿5,000</span></div>
+                <div><strong>Pay your way</strong><span class="muted">PromptPay, bank transfer or cash on delivery</span></div>
+            </div>
+        </div>
+        <div class="container footer-bottom muted">© {% now "Y" %} {{ store_name }}</div>
+    </footer>
+
+    <script>
+        document.getElementById('theme-toggle').addEventListener('click', function () {
+            var root = document.documentElement;
+            var dark = root.dataset.theme !== 'dark';
+            if (dark) { root.dataset.theme = 'dark'; } else { delete root.dataset.theme; }
+            try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) {}
+        });
+        document.querySelectorAll('.toast-close').forEach(function (btn) {
+            btn.addEventListener('click', function () { btn.parentElement.remove(); });
+        });
+        // Success and info toasts fade out on their own; warnings and errors stay until dismissed.
+        setTimeout(function () {
+            document.querySelectorAll('.toast-success, .toast-info').forEach(function (el) {
+                el.classList.add('toast-leaving');
+                setTimeout(function () { el.remove(); }, 400);
+            });
+        }, 4500);
+    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

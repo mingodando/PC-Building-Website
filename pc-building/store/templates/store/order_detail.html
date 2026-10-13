@@ -1,0 +1,112 @@
+{% extends 'store/base.html' %}
+{% load store_extras %}
+
+{% block title %}Order #{{ order.pk }} · {{ store_name }}{% endblock %}
+
+{% block content %}
+{% if just_placed %}
+    <section class="confirm-hero">
+        <div class="confirm-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="34" height="34"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h1>Thank you, {{ order.full_name }}!</h1>
+        <p class="muted">Order #{{ order.pk }} is placed. We've emailed a confirmation to {{ order.email }}.</p>
+    </section>
+{% else %}
+    <nav class="breadcrumbs"><a href="{% url 'order_list' %}">Your orders</a><span>/</span>Order #{{ order.pk }}</nav>
+    <div class="order-head">
+        <h1 class="page-title">Order #{{ order.pk }}</h1>
+        <span class="status status-{{ order.status }}">{{ order.get_status_display }}</span>
+    </div>
+    <p class="muted">Placed {{ order.created_at|date:"j F Y, H:i" }}</p>
+{% endif %}
+
+{% if order.status == 'cancelled' %}
+    <div class="panel panel-muted">This order was cancelled.</div>
+{% else %}
+    <ol class="tracker">
+        {% for step in steps %}
+            <li class="{% if forloop.counter0 <= order.progress_step %}done{% endif %}{% if forloop.counter0 == order.progress_step %} current{% endif %}">
+                <span class="tracker-dot"></span>
+                <span class="tracker-label">{{ step }}</span>
+            </li>
+        {% endfor %}
+    </ol>
+{% endif %}
+
+{% if order.awaiting_payment %}
+    <section class="panel pay-panel">
+        <div>
+            <span class="eyebrow">Amount to pay</span>
+            <div class="price price-xl">{{ order.total_price|baht }}</div>
+        </div>
+        <div>
+            <span class="eyebrow">Your payment reference</span>
+            <div class="reference mono">{{ order.payment_reference }}</div>
+        </div>
+        <div class="pay-instructions">
+            {% if order.payment_method == 'promptpay' %}
+                {% if promptpay_id %}
+                    <p>Send the amount by PromptPay to <strong class="mono">{{ promptpay_id }}</strong> and put <strong class="mono">{{ order.payment_reference }}</strong> in the note.</p>
+                {% else %}
+                    <p>We'll email you our PromptPay QR code shortly. Put <strong class="mono">{{ order.payment_reference }}</strong> in the transfer note.</p>
+                {% endif %}
+            {% else %}
+                {% if bank_account %}
+                    <p>Transfer the amount to <strong>{{ bank_account }}</strong> and put <strong class="mono">{{ order.payment_reference }}</strong> in the transfer note.</p>
+                {% else %}
+                    <p>We'll email you our bank details shortly. Put <strong class="mono">{{ order.payment_reference }}</strong> in the transfer note.</p>
+                {% endif %}
+            {% endif %}
+            <p class="muted small">Your order ships once we've confirmed the payment.</p>
+        </div>
+    </section>
+{% endif %}
+
+<div class="two-col">
+    <section class="panel">
+        <h2 class="panel-title">Items</h2>
+        <ul class="mini-items mini-items-lg">
+            {% for item in order.items.all %}
+                <li>
+                    <span class="mini-qty">{{ item.quantity }}×</span>
+                    <span class="mini-name">
+                        {% if item.product and item.product.is_active %}<a href="{{ item.product.get_absolute_url }}" class="link">{{ item.product_name }}</a>{% else %}{{ item.product_name }}{% endif %}
+                        <span class="muted small">{{ item.price|baht }} each</span>
+                    </span>
+                    <span>{{ item.subtotal|baht }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="summary-row"><span>Subtotal</span><span>{{ order.subtotal|baht }}</span></div>
+        <div class="summary-row"><span>{{ order.get_delivery_method_display }}</span><span>{% if order.shipping_fee %}{{ order.shipping_fee|baht }}{% else %}Free{% endif %}</span></div>
+        <div class="summary-row summary-total"><span>Total</span><span>{{ order.total_price|baht }}</span></div>
+    </section>
+
+    <aside class="stack">
+        <section class="panel">
+            <h2 class="panel-title">Delivery</h2>
+            <address class="address">
+                <strong>{{ order.full_name }}</strong><br>
+                {{ order.address }}<br>
+                {{ order.city }} {{ order.postal_code }}<br>
+                {{ order.phone }}
+            </address>
+            <p class="muted small">{{ order.get_delivery_method_display }} · {{ order.delivery_eta }}</p>
+            {% if order.notes %}<p class="small"><strong>Notes:</strong> {{ order.notes }}</p>{% endif %}
+        </section>
+        <section class="panel">
+            <h2 class="panel-title">Payment</h2>
+            <p>{{ order.get_payment_method_display }}</p>
+            <p class="muted small mono">{{ order.payment_reference }}</p>
+        </section>
+        {% if order.can_cancel %}
+            <form action="{% url 'order_cancel' order.pk %}" method="post" onsubmit="return confirm('Cancel order #{{ order.pk }}?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary btn-block">Cancel order</button>
+            </form>
+        {% endif %}
+        {% if just_placed %}<a href="{% url 'product_list' %}" class="btn btn-ghost btn-block">Continue shopping</a>{% endif %}
+    </aside>
+</div>
+{% endblock %}

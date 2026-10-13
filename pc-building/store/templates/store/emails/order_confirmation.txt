@@ -1,0 +1,25 @@
+{% load store_extras %}{% autoescape off %}Hi {{ order.full_name }},
+
+Thanks for shopping with {{ store_name }}! Your order #{{ order.pk }} has been placed.
+
+Payment reference: {{ order.payment_reference }}
+
+{% for item in items %}  {{ item.quantity }} x {{ item.product_name }}  {{ item.subtotal|baht }}
+{% endfor %}
+  Subtotal: {{ order.subtotal|baht }}
+  {{ order.get_delivery_method_display }}: {% if order.shipping_fee %}{{ order.shipping_fee|baht }}{% else %}Free{% endif %}
+  Total: {{ order.total_price|baht }}
+
+Payment: {{ order.get_payment_method_display }}
+{% if order.payment_method == 'promptpay' %}{% if promptpay_id %}Please send {{ order.total_price|baht }} by PromptPay to {{ promptpay_id }} with {{ order.payment_reference }} in the note.{% else %}We'll send our PromptPay QR code shortly. Please put {{ order.payment_reference }} in the note.{% endif %}
+{% elif order.payment_method == 'bank_transfer' %}{% if bank_account %}Please transfer {{ order.total_price|baht }} to {{ bank_account }} with {{ order.payment_reference }} in the note.{% else %}We'll send our bank details shortly. Please put {{ order.payment_reference }} in the note.{% endif %}
+{% else %}Please have {{ order.total_price|baht }} ready in cash for the courier.
+{% endif %}
+Delivering to:
+  {{ order.full_name }}
+  {{ order.address }}
+  {{ order.city }} {{ order.postal_code }}
+  {{ order.phone }}
+
+- The {{ store_name }} team
+{% endautoescape %}

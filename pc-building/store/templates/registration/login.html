@@ -1,0 +1,10 @@
+{% extends 'registration/auth_base.html' %}
+
+{% block title %}Log in · {{ store_name }}{% endblock %}
+{% block heading %}Welcome back{% endblock %}
+{% block intro %}<p class="muted">Log in to see your cart and orders.</p>{% endblock %}
+{% block submit %}Log in{% endblock %}
+{% block footer %}
+    <a href="{% url 'password_reset' %}" class="link">Forgot your password?</a>
+    <span>New here? <a href="{% url 'signup' %}{% if next %}?next={{ next|urlencode }}{% endif %}" class="link">Create an account</a></span>
+{% endblock %}

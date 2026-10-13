@@ -1,0 +1,33 @@
+{% extends 'store/base.html' %}
+{% load store_extras %}
+
+{% block title %}Your orders · {{ store_name }}{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Your orders</h1>
+
+{% if orders %}
+    <ul class="order-list">
+        {% for order in orders %}
+            <li>
+                <a href="{{ order.get_absolute_url }}" class="order-row">
+                    <div>
+                        <strong>Order #{{ order.pk }}</strong>
+                        <span class="muted mono">{{ order.payment_reference }}</span>
+                    </div>
+                    <div class="muted">{{ order.created_at|date:"j M Y" }}</div>
+                    <div class="muted">{{ order.items.all|length }} item{{ order.items.all|length|pluralize }}</div>
+                    <span class="status status-{{ order.status }}">{{ order.get_status_display }}</span>
+                    <strong class="order-row-total">{{ order.total_price|baht }}</strong>
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <div class="empty-state">
+        <h3>No orders yet</h3>
+        <p class="muted">When you place an order it will show up here.</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary">Start shopping</a>
+    </div>
+{% endif %}
+{% endblock %}

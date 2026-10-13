@@ -1,14 +1,130 @@
 {% extends 'store/base.html' %}
+{% load store_extras %}
+
+{% block title %}{% if active_category %}{{ active_category.name }} · {% elif query %}“{{ query }}” · {% endif %}{{ store_name }}{% endblock %}
 
 {% block content %}
-<h2 class="product-header2"> Products</h2>
-<div class="product-grid">
-    {% for product in products %}
-        <a href="{% url 'product_detail' product.slug %}" class="product-card">
-            <h3>{{ product.name }}</h3>
-            <p>฿{{ product.price }}</p>
-        </a>
-    {% endfor %}
-</div>
+{% if show_hero %}
+<section class="hero">
+    <div class="hero-copy">
+        <span class="hero-kicker">New &amp; refurbished PC parts</span>
+        <h1>Build more PC<br>for <span class="accent-text">less baht.</span></h1>
+        <p>Graphics cards, CPUs, motherboards and more. Every refurbished part is tested and graded before it ships.</p>
+        <div class="hero-actions">
+            <a href="#catalog" class="btn btn-primary btn-lg">Shop all parts</a>
+            <a href="?condition=refurbished" class="btn btn-ghost btn-lg">Browse refurbished</a>
+        </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+        <div class="chip">
+            <div class="chip-core"><span>CB</span></div>
+        </div>
+        <div class="hero-stat hero-stat-1"><strong>A–C</strong><span>graded parts</span></div>
+        <div class="hero-stat hero-stat-2"><strong>฿0</strong><span>delivery over ฿5k</span></div>
+    </div>
+</section>
 
+{% if categories %}
+<section class="section">
+    <div class="section-head">
+        <h2>Shop by category</h2>
+    </div>
+    <div class="category-tiles">
+        {% for category in categories %}
+            <a href="{{ category.get_absolute_url }}" class="category-tile">
+                <span class="category-tile-name">{{ category.name }}</span>
+                <span class="muted">{{ category.product_count }} item{{ category.product_count|pluralize }}</span>
+            </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if featured %}
+<section class="section">
+    <div class="section-head">
+        <h2>Featured</h2>
+    </div>
+    <div class="product-grid">
+        {% for product in featured %}
+            {% include 'store/partials/product_card.html' %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endif %}
+
+<section class="section" id="catalog">
+    <div class="catalog-head">
+        <div>
+            {% if active_category %}
+                <nav class="breadcrumbs"><a href="{% url 'product_list' %}">All products</a><span>/</span>{{ active_category.name }}</nav>
+                <h1 class="page-title">{{ active_category.name }}</h1>
+            {% elif query %}
+                <h1 class="page-title">Results for “{{ query }}”</h1>
+            {% else %}
+                <h2>All products</h2>
+            {% endif %}
+            <p class="muted">{{ total_count }} product{{ total_count|pluralize }}</p>
+        </div>
+
+        <form method="get" class="filters" id="filters">
+            {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+            {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
+            <div class="segmented" role="group" aria-label="Condition">
+                <a href="{% query_with condition='' %}" class="{% if not condition %}active{% endif %}">Any</a>
+                {% for value, label in condition_options %}
+                    <a href="{% query_with condition=value %}" class="{% if condition == value %}active{% endif %}">{{ label }}</a>
+                {% endfor %}
+            </div>
+            {% if condition %}<input type="hidden" name="condition" value="{{ condition }}">{% endif %}
+            <label class="toggle">
+                <input type="checkbox" name="in_stock" value="1" {% if in_stock_only %}checked{% endif %} onchange="this.form.submit()">
+                <span>In stock only</span>
+            </label>
+            <label class="select-wrap">
+                <span class="sr-only">Sort by</span>
+                <select name="sort" onchange="this.form.submit()">
+                    {% for value, label in sort_options %}
+                        <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <noscript><button type="submit" class="btn btn-secondary">Apply</button></noscript>
+        </form>
+    </div>
+
+    {% if is_filtered %}
+        <div class="active-filters">
+            {% if query %}<a class="filter-chip" href="{% query_with q='' %}">“{{ query }}” <span aria-hidden="true">×</span></a>{% endif %}
+            {% if active_category %}<a class="filter-chip" href="{% query_with category='' %}">{{ active_category.name }} <span aria-hidden="true">×</span></a>{% endif %}
+            {% if condition %}<a class="filter-chip" href="{% query_with condition='' %}">{{ condition|capfirst }} <span aria-hidden="true">×</span></a>{% endif %}
+            {% if in_stock_only %}<a class="filter-chip" href="{% query_with in_stock='' %}">In stock <span aria-hidden="true">×</span></a>{% endif %}
+            <a class="link" href="{% url 'product_list' %}">Clear all</a>
+        </div>
+    {% endif %}
+
+    {% if products %}
+        <div class="product-grid">
+            {% for product in products %}
+                {% include 'store/partials/product_card.html' %}
+            {% endfor %}
+        </div>
+
+        {% if page.has_other_pages %}
+            <nav class="pagination" aria-label="Pages">
+                {% if page.has_previous %}<a href="{% query_with page=page.previous_page_number %}" class="btn btn-secondary">← Previous</a>{% endif %}
+                <span class="muted">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}<a href="{% query_with page=page.next_page_number %}" class="btn btn-secondary">Next →</a>{% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m20 20-3.5-3.5M8.5 11h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <h3>No products match</h3>
+            <p class="muted">Try a different search or clear the filters.</p>
+            <a href="{% url 'product_list' %}" class="btn btn-primary">See all products</a>
+        </div>
+    {% endif %}
+</section>
 {% endblock %}

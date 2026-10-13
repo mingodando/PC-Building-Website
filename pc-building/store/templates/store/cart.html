@@ -1,0 +1,88 @@
+{% extends 'store/base.html' %}
+{% load static store_extras %}
+
+{% block title %}Your cart · {{ store_name }}{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Your cart</h1>
+
+{% if items %}
+<div class="two-col">
+    <div class="stack">
+        {% if free_shipping_remaining %}
+            <div class="ship-meter">
+                <p>Add <strong>{{ free_shipping_remaining|baht }}</strong> more for free standard delivery.</p>
+                <div class="meter"><span style="width: {{ free_shipping_progress }}%"></span></div>
+            </div>
+        {% else %}
+            <div class="ship-meter ship-meter-done">
+                <p>🎉 Your order qualifies for <strong>free standard delivery</strong>.</p>
+                <div class="meter"><span style="width: 100%"></span></div>
+            </div>
+        {% endif %}
+
+        <ul class="cart-list">
+            {% for item in items %}
+                <li class="cart-item{% if item.quantity > item.product.stock or not item.product.is_active %} has-problem{% endif %}">
+                    <a href="{{ item.product.get_absolute_url }}" class="cart-thumb">
+                        {% include 'store/partials/product_image.html' with product=item.product size=36 %}
+                    </a>
+                    <div class="cart-item-info">
+                        <span class="eyebrow">{{ item.product.category.name }}</span>
+                        <a href="{{ item.product.get_absolute_url }}" class="cart-item-name">{{ item.product.name }}</a>
+                        <span class="muted">{{ item.product.price|baht }} each</span>
+                        {% if not item.product.is_active or item.product.stock == 0 %}
+                            <span class="error">No longer available — please remove it.</span>
+                        {% elif item.quantity > item.product.stock %}
+                            <span class="error">Only {{ item.product.stock }} left — lower the quantity.</span>
+                        {% endif %}
+                    </div>
+                    <form action="{% url 'cart_update' item.id %}" method="post" class="cart-qty">
+                        {% csrf_token %}
+                        <div class="qty-stepper qty-stepper-sm" data-stepper data-autosubmit>
+                            <button type="button" data-step="-1" aria-label="Decrease quantity">−</button>
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="0" max="{{ item.product.stock }}" aria-label="Quantity for {{ item.product.name }}">
+                            <button type="button" data-step="1" aria-label="Increase quantity">+</button>
+                        </div>
+                        <noscript><button type="submit" class="link">Update</button></noscript>
+                    </form>
+                    <div class="cart-item-total">
+                        <strong>{{ item.subtotal|baht }}</strong>
+                        <form action="{% url 'cart_remove' item.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="link link-danger">Remove</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'product_list' %}" class="link">← Keep shopping</a>
+    </div>
+
+    <aside class="summary-card">
+        <h2>Summary</h2>
+        <div class="summary-row"><span>Subtotal</span><span>{{ subtotal|baht }}</span></div>
+        <div class="summary-row"><span>Standard delivery</span><span>{% if standard_fee %}{{ standard_fee|baht }}{% else %}Free{% endif %}</span></div>
+        <div class="summary-row summary-total"><span>Estimated total</span><span>{{ estimated_total|baht }}</span></div>
+        {% if has_stock_problem %}
+            <p class="error">Fix the items marked in red before checking out.</p>
+            <button class="btn btn-primary btn-lg btn-block" disabled>Checkout</button>
+        {% else %}
+            <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg btn-block">Checkout</a>
+        {% endif %}
+        <p class="muted small">Express delivery and payment options are on the next step.</p>
+    </aside>
+</div>
+{% else %}
+<div class="empty-state">
+    <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true"><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.5L21 8H6.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20.5" r="1.3" fill="currentColor"/><circle cx="17" cy="20.5" r="1.3" fill="currentColor"/></svg>
+    <h3>Your cart is empty</h3>
+    <p class="muted">Find your next upgrade in the catalog.</p>
+    <a href="{% url 'product_list' %}" class="btn btn-primary">Start shopping</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'store/store.js' %}"></script>
+{% endblock %}

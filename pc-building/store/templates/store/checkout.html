@@ -1,0 +1,88 @@
+{% extends 'store/base.html' %}
+{% load static store_extras %}
+
+{% block title %}Checkout · {{ store_name }}{% endblock %}
+
+{% block content %}
+<nav class="breadcrumbs"><a href="{% url 'cart_detail' %}">Cart</a><span>/</span>Checkout</nav>
+<h1 class="page-title">Checkout</h1>
+
+<form method="post" class="two-col" novalidate>
+    {% csrf_token %}
+    <div class="stack">
+        {% if form.non_field_errors %}<div class="toast toast-error">{{ form.non_field_errors }}</div>{% endif %}
+
+        <section class="panel">
+            <h2 class="panel-title"><span class="step-num">1</span> Delivery address</h2>
+            <div class="form-grid">
+                {% include 'store/partials/field.html' with field=form.full_name %}
+                {% include 'store/partials/field.html' with field=form.phone %}
+                <div class="span-2">{% include 'store/partials/field.html' with field=form.email %}</div>
+                <div class="span-2">{% include 'store/partials/field.html' with field=form.address %}</div>
+                {% include 'store/partials/field.html' with field=form.city %}
+                {% include 'store/partials/field.html' with field=form.postal_code %}
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2 class="panel-title"><span class="step-num">2</span> Delivery speed</h2>
+            <div class="choice-list">
+                {% for option in delivery_options %}
+                    <label class="choice">
+                        <input type="radio" name="delivery_method" value="{{ option.value }}" data-fee="{{ option.fee }}" {% if selected_delivery == option.value %}checked{% endif %}>
+                        <span class="choice-body">
+                            <strong>{{ option.label }}</strong>
+                            <span class="muted">{{ option.eta }}</span>
+                        </span>
+                        <span class="choice-price">{% if option.fee %}{{ option.fee|baht }}{% else %}Free{% endif %}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {% for error in form.delivery_method.errors %}<small class="error">{{ error }}</small>{% endfor %}
+        </section>
+
+        <section class="panel">
+            <h2 class="panel-title"><span class="step-num">3</span> Payment</h2>
+            <div class="choice-list">
+                {% for radio in form.payment_method %}
+                    <label class="choice">
+                        {{ radio.tag }}
+                        <span class="choice-body">
+                            <strong>{{ radio.choice_label }}</strong>
+                            <span class="muted">
+                                {% if radio.data.value == 'promptpay' %}Scan and pay from any Thai banking app.
+                                {% elif radio.data.value == 'bank_transfer' %}Transfer to our account using your order reference.
+                                {% else %}Pay the courier in cash when your order arrives.{% endif %}
+                            </span>
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+            {% for error in form.payment_method.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            <div class="field-spaced">{% include 'store/partials/field.html' with field=form.notes %}</div>
+        </section>
+    </div>
+
+    <aside class="summary-card">
+        <h2>Order summary</h2>
+        <ul class="mini-items">
+            {% for item in items %}
+                <li>
+                    <span class="mini-qty">{{ item.quantity }}×</span>
+                    <span class="mini-name">{{ item.product.name }}</span>
+                    <span>{{ item.subtotal|baht }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+        <div class="summary-row"><span>Subtotal</span><span>{{ subtotal|baht }}</span></div>
+        <div class="summary-row"><span>Delivery</span><span id="shipping-fee">{% if shipping_fee %}{{ shipping_fee|baht }}{% else %}Free{% endif %}</span></div>
+        <div class="summary-row summary-total"><span>Total</span><span id="order-total" data-subtotal="{{ subtotal }}">{{ total|baht }}</span></div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block">Place order</button>
+        <p class="muted small">You'll get your payment reference on the next page and by email. Stock is held as soon as you place the order.</p>
+    </aside>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'store/store.js' %}"></script>
+{% endblock %}

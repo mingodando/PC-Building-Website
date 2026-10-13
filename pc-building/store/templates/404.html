@@ -1,0 +1,12 @@
+{% extends 'store/base.html' %}
+
+{% block title %}Page not found · {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="empty-state">
+    <div class="big-code mono">404</div>
+    <h3>We couldn't find that page</h3>
+    <p class="muted">The product may have sold out or moved.</p>
+    <a href="{% url 'product_list' %}" class="btn btn-primary">Back to the store</a>
+</div>
+{% endblock %}

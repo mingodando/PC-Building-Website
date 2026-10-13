@@ -1,0 +1,27 @@
+{% load store_extras %}
+<a href="{{ product.get_absolute_url }}" class="product-card{% if not product.in_stock %} is-sold-out{% endif %}">
+    <div class="product-card-image">
+        {% include 'store/partials/product_image.html' %}
+        <div class="card-badges">
+            {% if product.on_sale %}<span class="badge badge-sale">−{{ product.discount_percent }}%</span>{% endif %}
+            {% if product.condition == 'refurbished' %}<span class="badge badge-refurb">Refurbished{% if product.grade %} · {{ product.grade }}{% endif %}</span>{% endif %}
+        </div>
+    </div>
+    <div class="product-card-body">
+        <span class="eyebrow">{{ product.category.name }}</span>
+        <h3 class="product-card-title">{{ product.name }}</h3>
+        <div class="product-card-footer">
+            <div class="price-stack">
+                <span class="price">{{ product.price|baht }}</span>
+                {% if product.on_sale %}<span class="price-old">{{ product.compare_price|baht }}</span>{% endif %}
+            </div>
+            {% if not product.in_stock %}
+                <span class="stock-pill stock-out">Sold out</span>
+            {% elif product.low_stock %}
+                <span class="stock-pill stock-low">{{ product.stock }} left</span>
+            {% else %}
+                <span class="stock-pill stock-in">In stock</span>
+            {% endif %}
+        </div>
+    </div>
+</a>

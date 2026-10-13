@@ -1,36 +1,117 @@
 {% extends 'store/base.html' %}
+{% load static store_extras %}
+
+{% block title %}{{ product.name }} · {{ store_name }}{% endblock %}
 
 {% block content %}
+<nav class="breadcrumbs">
+    <a href="{% url 'product_list' %}">All products</a><span>/</span>
+    <a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a><span>/</span>
+    {{ product.name }}
+</nav>
+
 <div class="product-detail">
-    <div class="product-header-row">
-        <div>
-            <h1>{{ product.name }}</h1>
-            <p class="product-price">฿{{ product.price }}</p>
+    <div class="product-gallery">
+        {% include 'store/partials/product_image.html' with size=120 %}
+        <div class="card-badges">
+            {% if product.on_sale %}<span class="badge badge-sale">−{{ product.discount_percent }}%</span>{% endif %}
         </div>
-        <div class="product-image-placeholder"></div>
     </div>
 
-    <div class="spec-table">
-        <div class="spec-row">
-            <span class="spec-label">Category</span>
-            <span class="spec-value">{{ product.category }}</span>
+    <div class="product-info">
+        <span class="eyebrow">{{ product.category.name }}</span>
+        <h1 class="product-title">{{ product.name }}</h1>
+
+        <div class="tag-row">
+            {% if product.condition == 'refurbished' %}
+                <span class="badge badge-refurb">Refurbished{% if product.grade %} · {{ product.get_grade_display }}{% endif %}</span>
+            {% else %}
+                <span class="badge badge-new">Brand new</span>
+            {% endif %}
+            {% if not product.in_stock %}
+                <span class="stock-pill stock-out">Sold out</span>
+            {% elif product.low_stock %}
+                <span class="stock-pill stock-low">Only {{ product.stock }} left</span>
+            {% else %}
+                <span class="stock-pill stock-in">In stock · {{ product.stock }} available</span>
+            {% endif %}
         </div>
-        <div class="spec-row">
-            <span class="spec-label">Condition</span>
-            <span class="spec-value">{{ product.get_condition_display }}</span>
+
+        <div class="detail-price">
+            <span class="price price-xl">{{ product.price|baht }}</span>
+            {% if product.on_sale %}
+                <span class="price-old">{{ product.compare_price|baht }}</span>
+                <span class="save-tag">Save {{ product.savings|baht }}</span>
+            {% endif %}
         </div>
-        <div class="spec-row">
-            <span class="spec-label">Availability</span>
-            <span class="spec-value">{{ product.stock }} in stock</span>
-        </div>
+
+        {% if product.description %}
+            <p class="product-description">{{ product.description|linebreaksbr }}</p>
+        {% endif %}
+
+        {% if product.condition == 'refurbished' and product.grade %}
+            <div class="grade-callout">
+                <span class="grade-letter">{{ product.grade }}</span>
+                <div>
+                    <strong>{{ product.get_grade_display }}</strong>
+                    <p class="muted">{{ product.grade_description }}</p>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if product.in_stock %}
+            <form action="{% url 'cart_add' product.id %}" method="post" class="buy-box">
+                {% csrf_token %}
+                <div class="qty-stepper" data-stepper>
+                    <button type="button" data-step="-1" aria-label="Decrease quantity">−</button>
+                    <input type="number" name="quantity" value="1" min="1" max="{{ product.stock }}" aria-label="Quantity">
+                    <button type="button" data-step="1" aria-label="Increase quantity">+</button>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg btn-grow">Add to cart</button>
+            </form>
+            {% if in_cart %}
+                <p class="muted in-cart-note">You have {{ in_cart }} in your cart · <a href="{% url 'cart_detail' %}" class="link">View cart</a></p>
+            {% endif %}
+        {% else %}
+            <div class="buy-box">
+                <button type="button" class="btn btn-lg btn-grow" disabled>Out of stock</button>
+            </div>
+        {% endif %}
+
+        <ul class="perks">
+            <li><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="7" cy="17.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="17.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Free standard delivery over ฿5,000</li>
+            <li><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.5 7 10 4-1.5 7-5.5 7-10V6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Tested before it ships</li>
+            <li><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg>PromptPay, bank transfer or cash on delivery</li>
+        </ul>
+    </div>
+</div>
+
+<section class="section">
+    <div class="section-head"><h2>Specifications</h2></div>
+    <dl class="spec-table">
+        <div class="spec-row"><dt>Category</dt><dd>{{ product.category.name }}</dd></div>
+        <div class="spec-row"><dt>Condition</dt><dd>{{ product.get_condition_display }}{% if product.grade %} ({{ product.get_grade_display }}){% endif %}</dd></div>
         {% for spec in product.specs.all %}
-        <div class="spec-row">
-            <span class="spec-label">{{ spec.key }}</span>
-            <span class="spec-value">{{ spec.value }}</span>
-        </div>
+            <div class="spec-row"><dt>{{ spec.key }}</dt><dd>{{ spec.value }}</dd></div>
+        {% endfor %}
+    </dl>
+</section>
+
+{% if related %}
+<section class="section">
+    <div class="section-head">
+        <h2>More in {{ product.category.name }}</h2>
+        <a href="{{ product.category.get_absolute_url }}" class="link">See all →</a>
+    </div>
+    <div class="product-grid">
+        {% for product in related %}
+            {% include 'store/partials/product_card.html' %}
         {% endfor %}
     </div>
+</section>
+{% endif %}
+{% endblock %}
 
-    <button class="add-to-cart-btn">Add to Cart</button>
-</div>
+{% block scripts %}
+<script src="{% static 'store/store.js' %}"></script>
 {% endblock %}

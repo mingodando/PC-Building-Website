@@ -1,0 +1,24 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <h1>{% block heading %}{% endblock %}</h1>
+        {% block intro %}{% endblock %}
+        {% block form %}
+            <form method="post" class="stack" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="toast toast-error">{% for error in form.non_field_errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+                {% for field in form %}
+                    {% include 'store/partials/field.html' %}
+                {% endfor %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                <button type="submit" class="btn btn-primary btn-lg btn-block">{% block submit %}Continue{% endblock %}</button>
+            </form>
+        {% endblock %}
+        <div class="auth-footer">{% block footer %}{% endblock %}</div>
+    </div>
+</div>
+{% endblock %}
